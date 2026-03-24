@@ -75,6 +75,45 @@ bool maze_parser(const string &filename, int &n, int &m, vector<vector<int>> &ma
 }
 
 
+// Naive recursive: find max-gold path from (i,j) to (n-1,m-1).
+// Returns -1 if no path exists (out of bounds or blocked cell).
+int maze_naive(const vector<vector<int>>& maze, int i, int j, int n, int m) {
+    if (i >= n || j >= m) return -1;
+    if (maze[i][j] == 0) return -1;
+    if (i == n-1 && j == m-1) return maze[i][j];
+
+    int down  = maze_naive(maze, i+1, j, n, m);
+    int right = maze_naive(maze, i, j+1, n, m);
+
+    if (down == -1 && right == -1) return -1;
+    int best = (down == -1) ? right : (right == -1) ? down : max(down, right);
+    return maze[i][j] + best;
+}
 
 
+// Memoized recursive: same semantics as maze_naive but caches results.
+// Sentinel -2 means "not yet computed"; -1 means "no path".
+// The memo table is reset whenever i==0 and j==0.
+static vector<vector<int>> memo_table;
+
+int maze_memo(const vector<vector<int>>& maze, int i, int j, int n, int m) {
+    if ((int)memo_table.size() != n || (int)memo_table[0].size() != m || (i == 0 && j == 0))
+        memo_table.assign(n, vector<int>(m, -2));
+
+    if (i >= n || j >= m) return -1;
+    if (maze[i][j] == 0) return -1;
+    if (i == n-1 && j == m-1) return memo_table[i][j] = maze[i][j];
+    if (memo_table[i][j] != -2) return memo_table[i][j];
+
+    int down  = maze_memo(maze, i+1, j, n, m);
+    int right = maze_memo(maze, i, j+1, n, m);
+
+    int result;
+    if (down == -1 && right == -1) result = -1;
+    else if (down == -1) result = maze[i][j] + right;
+    else if (right == -1) result = maze[i][j] + down;
+    else result = maze[i][j] + max(down, right);
+
+    return memo_table[i][j] = result;
+}
 
